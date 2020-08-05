@@ -1,29 +1,34 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow import keras
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Activation, Dense, Flatten, BatchNormalization, Conv2D, MaxPool2D
+from tensorflow.keras.layers import Dense
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import categorical_crossentropy
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import confusion_matrix
-import itertools
 import os
 import shutil
 import random
 import glob
-import matplotlib.pyplot as plt
 import warnings
 import dlplots
+import commonlib
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
-# %matplotlib inline
 
+# test for and update gpu
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     tf.config.experimental.set_memory_growth(gpus[0], True)
     print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
 
+# create out train, test and validation data
+#data source https://www.kaggle.com/c/dogs-vs-cats/
+
+#use these parameters to define the size of the train, validation and tes sets (Note: max is 2500)
+train_size = 500
+valid_size = 100
+test_size = 50
+"""
 os.chdir('data/dogs-vs-cats')
 
 if os.path.isdir('./train') is True:
@@ -41,9 +46,7 @@ if os.path.isdir('train/dog') is False:
     os.makedirs('test/dog')
     os.makedirs('test/cat')
 
-train_size = 2000
-valid_size = 100
-test_size = 100
+
 for c in random.sample(glob.glob('../../train/cat*'), train_size):
     shutil.copy(c, 'train/cat')
 for c in random.sample(glob.glob('../../train/dog*'), train_size):
@@ -58,6 +61,7 @@ for c in random.sample(glob.glob('../../train/dog*'), test_size):
     shutil.copy(c, 'test/dog')
 
 os.chdir('../../')
+"""
 
 train_path = 'data/dogs-vs-cats/train'
 valid_path = 'data/dogs-vs-cats/valid'
@@ -81,27 +85,41 @@ imgs, labels = train_batches.next()
 dlplots.plotImages(imgs)
 print(labels)
 """
+# download base vgg16 model
+vgg16_model = tf.keras.applications.vgg16.VGG16()
+vgg16_model.summary()
 
-model = Sequential([
-    Conv2D(filters=32, kernel_size=(3, 3), activation='relu', padding='same', input_shape=(224, 224, 3)),
-    MaxPool2D(pool_size=(2, 2), strides=2),
-    Conv2D(filters=64, kernel_size=(3, 3), activation='relu', padding='same'),
-    MaxPool2D(pool_size=(2, 2), strides=2),
-    Flatten(),
-    Dense(units=2, activation='softmax')
-])
+print(commonlib.count_params(vgg16_model))
+
+# create a sequential model and populate it will all but the last layer from the vgg16 model
+model = Sequential()
+for layer in vgg16_model.layers[:-1]:
+    model.add(layer)
+
 model.summary()
+print(commonlib.count_params(vgg16_model))
+for layer in model.layers:
+    layer.trainable = False
+
+#add out 2 output classification layer
+model.add(Dense(units=2, activation='softmax'))
+model.summary()
+
+#train test and create output
 model.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(x=train_batches, validation_data=valid_batches, epochs=2, verbose=2)
+model.fit(x=train_batches, validation_data=valid_batches, epochs=5, verbose=2)
 
-test_images, test_labels = test_batches.next()
-dlplots.plotImages(test_images)
-print(test_labels)
+#test_images, test_labels = next(test_batches)
+#dlplots.plotImages(test_images)
 
-test_batches.classes
+
+# test_batches.classes
 predictions = model.predict(x=test_batches, verbose=0)
-np.round(predictions)
-cm = confusion_matrix(y_true=test_batches.classes, y_pred=np.argmax(predictions, axis=1))
-test_batches.class_indices
-cm_plot_labels = ['cats', 'dogs']
-dlplots.plot_confusion_matrix(cm, classes=cm_plot_labels, title='confusion in a jar')
+#predictions = np.round(predictions)
+cm = confusion_matrix(y_true=test_batches.classes, y_pred=np.argmax(predictions, axis=-1))
+print("classses")
+print(test_batches.classes)
+print("predictions")
+print(np.argmax(predictions, axis=-1))
+cm_plot_labels = ['cat', 'dog']
+dlplots.plot_confusion_matrix(cm=cm, classes=cm_plot_labels, title='confusion in a jar')
