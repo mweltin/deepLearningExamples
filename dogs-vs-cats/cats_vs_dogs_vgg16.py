@@ -25,10 +25,10 @@ if gpus:
 #data source https://www.kaggle.com/c/dogs-vs-cats/
 
 #use these parameters to define the size of the train, validation and tes sets (Note: max is 2500)
-train_size = 500
-valid_size = 100
-test_size = 50
-"""
+train_size = 1000
+valid_size = 200
+test_size = 100
+
 os.chdir('data/dogs-vs-cats')
 
 if os.path.isdir('./train') is True:
@@ -61,7 +61,7 @@ for c in random.sample(glob.glob('../../train/dog*'), test_size):
     shutil.copy(c, 'test/dog')
 
 os.chdir('../../')
-"""
+
 
 train_path = 'data/dogs-vs-cats/train'
 valid_path = 'data/dogs-vs-cats/valid'
@@ -72,7 +72,7 @@ train_batches = ImageDataGenerator(preprocessing_function=tf.keras.applications.
 valid_batches = ImageDataGenerator(preprocessing_function=tf.keras.applications.vgg16.preprocess_input) \
     .flow_from_directory(directory=valid_path, target_size=(224, 224), classes=['cat', 'dog'], batch_size=10)
 test_batches = ImageDataGenerator(preprocessing_function=tf.keras.applications.vgg16.preprocess_input) \
-    .flow_from_directory(directory=test_path, target_size=(224, 224), classes=['cat', 'dog'], batch_size=10)
+    .flow_from_directory(directory=test_path, target_size=(224, 224), classes=['cat', 'dog'], batch_size=10, shuffle=False)
 
 assert train_batches.n == train_size * 2
 assert valid_batches.n == valid_size * 2
@@ -107,18 +107,18 @@ model.summary()
 
 #train test and create output
 model.compile(optimizer=Adam(learning_rate=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
-model.fit(x=train_batches, validation_data=valid_batches, epochs=5, verbose=2)
+model.fit(x=train_batches, validation_data=valid_batches, epochs=4, verbose=2)
 
-#test_images, test_labels = next(test_batches)
-#dlplots.plotImages(test_images)
+test_images, test_labels = next(test_batches)
+dlplots.plotImages(test_images)
 
 
 # test_batches.classes
 predictions = model.predict(x=test_batches, verbose=0)
 #predictions = np.round(predictions)
-cm = confusion_matrix(y_true=test_batches.classes, y_pred=np.argmax(predictions, axis=-1))
-print("classses")
-print(test_batches.classes)
+cm = confusion_matrix(y_true=test_batches.labels, y_pred=np.argmax(predictions, axis=-1))
+print("classes")
+print(test_batches.labels)
 print("predictions")
 print(np.argmax(predictions, axis=-1))
 cm_plot_labels = ['cat', 'dog']
