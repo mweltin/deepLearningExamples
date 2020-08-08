@@ -9,3 +9,4 @@ Python: 3.8.2
 PyCharm Setup:
 Add the LD_PATH to your run configuration python template's environment variables
 PYTHONUNBUFFERED=1;LD_LIBRARY_PATH=/usr/lib/cuda/include:/usr/lib/cuda/lib64
+For Run and Debug configurations set the directory with commonlib.py as your working directory.
