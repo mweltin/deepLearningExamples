@@ -3,7 +3,7 @@ import itertools
 import matplotlib.pyplot as plt
 
 
-def plotImages(images_arr):
+def plotImages(images_arr, file_name='dogs-vs-cats'):
     fig, axes = plt.subplots(1, 10, figsize=(20, 20))
     axes = axes.flatten()
     for img, ax in zip(images_arr, axes):
@@ -11,7 +11,7 @@ def plotImages(images_arr):
         ax.axis('off')
     plt.tight_layout()
     # plt.show()
-    plt.savefig("dogs-v-cat.png")
+    plt.savefig( file_name + ".png")
     plt.close()
 
 
